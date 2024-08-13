@@ -8,39 +8,68 @@ def json_to_html(json_data, output_html):
     # Initialize HTML document
     doc, tag, text = Doc().tagtext()
 
-    def recursive_json_to_html(data, tag, text):
+    def recursive_json_to_html(data, tag, text, parent_id=""):
         if isinstance(data, dict):
-            with tag("table", klass="table table-striped table-bordered"):
-                for key, value in data.items():
-                    with tag("tr"):
-                        with tag("th", klass="json-key"):
-                            text(key)
-                        with tag("td", klass="json-value"):
-                            recursive_json_to_html(value, tag, text)
+            element_id = f"collapse-{parent_id}"
+            with tag("div", klass="card"):
+                with tag("div", klass="card-header"):
+                    with tag("a", href=f"#{element_id}", **{'data-toggle': "collapse", 'aria-expanded': "true", 'aria-controls': element_id}):
+                        with tag("i", klass="fas fa-key"): pass
+                        text(f" Object with {len(data)} elements")
+                with tag("div", id=element_id, klass="collapse show"):
+                    with tag("table", klass="table table-striped table-bordered"):
+                        for key, value in data.items():
+                            sub_element_id = f"{element_id}-{key}"
+                            with tag("tr"):
+                                with tag("th", klass="json-key"):
+                                    text(key)
+                                with tag("td", klass="json-value"):
+                                    recursive_json_to_html(value, tag, text, sub_element_id)
         elif isinstance(data, list):
-            with tag("table", klass="table table-bordered table-hover"):
-                for index, item in enumerate(data):
-                    with tag("tr"):
-                        with tag("th", scope="row"):
-                            text(f"Item {index + 1}")
-                        with tag("td"):
-                            recursive_json_to_html(item, tag, text)
+            element_id = f"collapse-{parent_id}"
+            with tag("div", klass="card"):
+                with tag("div", klass="card-header"):
+                    with tag("a", href=f"#{element_id}", **{'data-toggle': "collapse", 'aria-expanded': "true", 'aria-controls': element_id}):
+                        with tag("i", klass="fas fa-list-ul"): pass
+                        text(f" List with {len(data)} items")
+                with tag("div", id=element_id, klass="collapse show"):
+                    with tag("table", klass="table table-bordered table-hover"):
+                        for index, item in enumerate(data):
+                            sub_element_id = f"{element_id}-item-{index}"
+                            with tag("tr"):
+                                with tag("th", scope="row"):
+                                    text(f"Item {index + 1}")
+                                with tag("td"):
+                                    recursive_json_to_html(item, tag, text, sub_element_id)
         else:
-            text(data)
+            with tag("span"):
+                if isinstance(data, bool):
+                    with tag("i", klass="fas fa-toggle-on" if data else "fas fa-toggle-off"): pass
+                    text(f" {str(data)}")
+                elif isinstance(data, (int, float)):
+                    with tag("i", klass="fas fa-hashtag"): pass
+                    text(f" {str(data)}")
+                else:
+                    with tag("i", klass="fas fa-font"): pass
+                    text(f" {str(data)}")
 
     with tag("html"):
         with tag("head"):
             with tag("title"):
-                text("JSON to HTML Visualization")
+                text("JSON Data Visualization")
             with tag("link", rel="stylesheet", href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"):
                 pass
             with tag("link", rel="stylesheet", href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css"):
+                pass
+            with tag("link", rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"):
                 pass
             with tag("script", src="https://code.jquery.com/jquery-3.5.1.js"):
                 pass
             with tag("script", src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"):
                 pass
             with tag("script", src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"):
+                pass
+            with tag("script", src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"):
                 pass
             with tag("style"):
                 text("""
@@ -53,20 +82,15 @@ def json_to_html(json_data, output_html):
                         color: #333;
                         margin-bottom: 20px;
                     }
-                    table.json-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin: 20px 0;
-                    }
-                    table.json-table th, table.json-table td {
-                        padding: 10px;
-                        text-align: left;
-                        vertical-align: top;
-                    }
                     .json-key {
                         font-weight: bold;
                     }
                     .json-value {
+                        width: 100%;
+                    }
+                    .card-header a {
+                        text-decoration: none;
+                        display: block;
                         width: 100%;
                     }
                 """)
@@ -85,7 +109,7 @@ def json_to_html(json_data, output_html):
         with tag("body", klass="container-fluid"):
             with tag("h1", klass="my-4"):
                 text("JSON Data Visualization")
-            recursive_json_to_html(json_data, tag, text)
+            recursive_json_to_html(json_data, tag, text, "root")
 
     # Write the HTML to file with indentation for readability
     with open(output_html, 'w', encoding='utf-8') as file:
